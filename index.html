@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Samuelzinho — Jogo da Cobrinha</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#163d28">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg-deep: #0f2e1e;
+    --bg-mid: #163d28;
+    --leaf: #4caf6b;
+    --leaf-bright: #7bdc9a;
+    --sun: #ffd15c;
+    --sun-dark: #f5a623;
+    --berry: #ff5d5d;
+    --cream: #f3ead8;
+    --text-dark: #0f2e1e;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    font-family: 'Baloo 2', 'Segoe UI', system-ui, sans-serif;
+    touch-action: none;
+    user-select: none;
+  }
+
+  @font-face {
+    font-family: 'Baloo 2';
+    src: local('Baloo 2');
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 20% 10%, rgba(123,220,154,0.15), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(255,209,92,0.12), transparent 45%),
+      linear-gradient(180deg, var(--bg-mid), var(--bg-deep) 70%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    position: relative;
+  }
+
+  .vine {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 14px;
+    background: repeating-linear-gradient(90deg, var(--leaf) 0 18px, var(--leaf-bright) 18px 22px, transparent 22px 40px);
+    opacity: 0.35;
+  }
+
+  header {
+    width: 100%;
+    text-align: center;
+    padding: 14px 12px 6px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(26px, 8vw, 38px);
+    color: var(--sun);
+    letter-spacing: 0.5px;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.35), 0 0 18px rgba(255,209,92,0.25);
+    font-weight: 800;
+  }
+
+  h1 span { color: var(--leaf-bright); }
+
+  .subtitle {
+    color: var(--cream);
+    opacity: 0.65;
+    font-size: 13px;
+    margin-top: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 8px 0;
+    flex-shrink: 0;
+  }
+
+  .pill {
+    background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(255,209,92,0.35);
+    border-radius: 999px;
+    padding: 6px 16px;
+    color: var(--cream);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pill b { color: var(--sun); font-size: 16px; }
+
+  .board-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 4px 12px;
+  }
+
+  #board {
+    background: linear-gradient(160deg, #1c4a30, #133823);
+    border-radius: 18px;
+    box-shadow:
+      inset 0 0 0 3px rgba(123,220,154,0.25),
+      inset 0 8px 30px rgba(0,0,0,0.4),
+      0 10px 30px rgba(0,0,0,0.5);
+    max-width: 100%;
+    max-height: 100%;
+    touch-action: none;
+  }
+
+  .controls {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 64px 64px 64px;
+    grid-template-rows: 64px 64px 64px;
+    gap: 8px;
+    padding: 10px 0 14px;
+    justify-content: center;
+  }
+
+  .ctrl-btn {
+    grid-column: 2;
+    background: linear-gradient(160deg, var(--leaf-bright), var(--leaf));
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 #2c7a48, 0 6px 14px rgba(0,0,0,0.4);
+    color: var(--text-dark);
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    active-opacity: 0.8;
+  }
+  .ctrl-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #2c7a48; }
+
+  .btn-up { grid-row: 1; }
+  .btn-left { grid-row: 2; grid-column: 1; }
+  .btn-down { grid-row: 2; grid-column: 2; }
+  .btn-right { grid-row: 2; grid-column: 3; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 25, 16, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px;
+    text-align: center;
+    z-index: 10;
+  }
+
+  .overlay.hidden { display: none; }
+
+  .overlay h2 {
+    color: var(--sun);
+    font-size: clamp(24px, 8vw, 34px);
+    margin: 0;
+  }
+
+  .overlay p {
+    color: var(--cream);
+    opacity: 0.8;
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.5;
+  }
+
+  .snake-icon {
+    font-size: 60px;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
+  }
+
+  .big-btn {
+    background: linear-gradient(160deg, var(--sun), var(--sun-dark));
+    border: none;
+    border-radius: 999px;
+    padding: 14px 38px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-dark);
+    box-shadow: 0 5px 0 #c47f13, 0 8px 20px rgba(0,0,0,0.4);
+  }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #c47f13; }
+
+  .score-final b { color: var(--berry); font-size: 22px; }
+</style>
+</head>
+<body>
+
+<div class="vine"></div>
+
+<header>
+  <h1>Samuel<span>zinho</span></h1>
+  <div class="subtitle">o jogo da cobrinha</div>
+</header>
+
+<div class="hud">
+  <div class="pill">🍓 <b id="score">0</b></div>
+  <div class="pill">🏆 <b id="best">0</b></div>
+</div>
+
+<div class="board-wrap">
+  <canvas id="board"></canvas>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn btn-up" data-dir="up">▲</button>
+  <button class="ctrl-btn btn-left" data-dir="left">◀</button>
+  <button class="ctrl-btn btn-down" data-dir="down">▼</button>
+  <button class="ctrl-btn btn-right" data-dir="right">▶</button>
+</div>
+
+<div class="overlay" id="startOverlay">
+  <div class="snake-icon">🐍</div>
+  <h2>Samuelzinho</h2>
+  <p>Deslize o dedo ou use as setas para guiar o Samuelzinho e comer as frutinhas. Cuidado pra não bater na parede nem no próprio rabo!</p>
+  <button class="big-btn" id="startBtn">Jogar</button>
+</div>
+
+<div class="overlay hidden" id="overOverlay">
+  <div class="snake-icon">💥</div>
+  <h2>Ele tropeçou!</h2>
+  <p class="score-final">Você marcou <b id="finalScore">0</b> pontos</p>
+  <button class="big-btn" id="retryBtn">Jogar de novo</button>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const startOverlay = document.getElementById('startOverlay');
+  const overOverlay = document.getElementById('overOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+
+  const COLS = 17, ROWS = 21;
+  let cell = 20;
+
+  function resize(){
+    const wrap = document.querySelector('.board-wrap');
+    const availW = wrap.clientWidth - 24;
+    const availH = wrap.clientHeight - 8;
+    cell = Math.floor(Math.min(availW / COLS, availH / ROWS));
+    if (cell < 8) cell = 8;
+    canvas.width = cell * COLS;
+    canvas.height = cell * ROWS;
+    draw();
+  }
+
+  let snake, dir, nextDir, food, score, best, running, loopId, speed;
+
+  function loadBest(){
+    try { return parseInt(localStorage.getItem('samuelzinho_best') || '0', 10); }
+    catch(e){ return 0; }
+  }
+  function saveBest(v){
+    try { localStorage.setItem('samuelzinho_best', v); } catch(e){}
+  }
+
+  best = loadBest();
+  bestEl.textContent = best;
+
+  function reset(){
+    const cx = Math.floor(COLS/2), cy = Math.floor(ROWS/2);
+    snake = [
+      {x: cx-1, y: cy},
+      {x: cx-2, y: cy},
+      {x: cx-3, y: cy}
+    ];
+    dir = {x:1, y:0};
+    nextDir = {x:1, y:0};
+    score = 0;
+    speed = 150;
+    scoreEl.textContent = score;
+    placeFood();
+  }
+
+  function placeFood(){
+    let ok = false;
+    while(!ok){
+      food = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) };
+      ok = !snake.some(s => s.x === food.x && s.y === food.y);
+    }
+  }
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+
+    // subtle checker floor
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        ctx.fillStyle = (x+y)%2===0 ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.05)';
+        ctx.fillRect(x*cell, y*cell, cell, cell);
+      }
+    }
+
+    // food
+    const fcx = food.x*cell + cell/2, fcy = food.y*cell + cell/2;
+    ctx.fillStyle = '#ff5d5d';
+    ctx.beginPath();
+    ctx.arc(fcx, fcy, cell*0.32, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#4caf6b';
+    ctx.fillRect(fcx-cell*0.06, fcy-cell*0.46, cell*0.12, cell*0.18);
+
+    // snake
+    snake.forEach((s, i) => {
+      const x = s.x*cell, y = s.y*cell;
+      const isHead = i===0;
+      ctx.fillStyle = isHead ? '#7bdc9a' : (i%2===0 ? '#4caf6b' : '#3c9a5b');
+      roundRect(x+1, y+1, cell-2, cell-2, cell*0.32);
+      ctx.fill();
+
+      if (isHead) {
+        ctx.fillStyle = '#0f2e1e';
+        const eyeOffX = dir.x !== 0 ? dir.x*cell*0.18 : cell*0.18;
+        const eyeOffY = dir.y !== 0 ? dir.y*cell*0.18 : -cell*0.05;
+        ctx.beginPath();
+        ctx.arc(x+cell/2+eyeOffX, y+cell/2+eyeOffY-cell*0.12, cell*0.07, 0, Math.PI*2);
+        ctx.arc(x+cell/2-eyeOffX*0.3+ (dir.x!==0?0:cell*0.0), y+cell/2+eyeOffY+cell*0.12, cell*0.07, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+  }
+
+  function step(){
+    dir = nextDir;
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
+        snake.some(s => s.x === head.x && s.y === head.y)) {
+      gameOver();
+      return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      scoreEl.textContent = score;
+      placeFood();
+      if (speed > 70) speed -= 3;
+      restartLoop();
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  function restartLoop(){
+    clearInterval(loopId);
+    loopId = setInterval(step, speed);
+  }
+
+  function gameOver(){
+    running = false;
+    clearInterval(loopId);
+    if (score > best) {
+      best = score;
+      saveBest(best);
+      bestEl.textContent = best;
+    }
+    finalScoreEl.textContent = score;
+    overOverlay.classList.remove('hidden');
+  }
+
+  function startGame(){
+    reset();
+    running = true;
+    startOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    resize();
+    restartLoop();
+  }
+
+  // controls
+  function setDir(nx, ny){
+    if (!running) return;
+    if (dir.x === -nx && dir.y === -ny) return; // no 180
+    if (dir.x === nx && dir.y === ny) return;
+    nextDir = {x: nx, y: ny};
+  }
+
+  document.querySelectorAll('.ctrl-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleBtn(btn.dataset.dir);
+    }, {passive:false});
+    btn.addEventListener('click', () => handleBtn(btn.dataset.dir));
+  });
+
+  function handleBtn(d){
+    if (d==='up') setDir(0,-1);
+    if (d==='down') setDir(0,1);
+    if (d==='left') setDir(-1,0);
+    if (d==='right') setDir(1,0);
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') setDir(0,-1);
+    if (e.key === 'ArrowDown') setDir(0,1);
+    if (e.key === 'ArrowLeft') setDir(-1,0);
+    if (e.key === 'ArrowRight') setDir(1,0);
+  });
+
+  // swipe on canvas
+  let touchStart = null;
+  canvas.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    touchStart = {x: t.clientX, y: t.clientY};
+  }, {passive:true});
+
+  canvas.addEventListener('touchend', (e) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (Math.abs(dx) > 20) setDir(dx > 0 ? 1 : -1, 0);
+    } else {
+      if (Math.abs(dy) > 20) setDir(0, dy > 0 ? 1 : -1);
+    }
+    touchStart = null;
+  }, {passive:true});
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  window.addEventListener('resize', resize);
+  reset();
+  resize();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+
+</body>
+</html>
